@@ -1,38 +1,56 @@
-// app/page.tsx (or .js, if you’re not using TypeScript)
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useState, FormEvent } from 'react';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './services/firebase';
+// If you want to store user data in Redux, import your setUser action, etc.
+// import { useAppDispatch } from '@/src/hooks/useAppDispatch';
+// import { setUser } from '@/src/store/slices/userSlice';
 
-export default function HomePage() {
-  const [username, setUsername] = useState('');
+export default function AuthPage() {
+  // const dispatch = useAppDispatch();
+
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      if (isSignUp) {
+        // CREATE a new user
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('User created:', userCredential.user.uid);
 
-    const data = await response.json();
-    console.log(data); // e.g. { success: true }
+        // Optionally dispatch to Redux:
+        // dispatch(setUser({ uid: userCredential.user.uid, email }));
+
+      } else {
+        // SIGN IN existing user
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('User signed in:', userCredential.user.uid);
+
+        // Optionally dispatch to Redux:
+        // dispatch(setUser({ uid: userCredential.user.uid, email }));
+      }
+    } catch (error) {
+      console.error('Firebase Auth Error:', error);
+    }
   }
 
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto' }}>
-      <h1>Welcome</h1>
+      <h1>{isSignUp ? 'Sign Up' : 'Login'}</h1>
+
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-        <label htmlFor="username">Username</label>
+        <label htmlFor="email">Email</label>
         <input
-          id="username"
+          id="email"
           type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
           required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           style={{ marginBottom: '1rem' }}
         />
 
@@ -40,14 +58,23 @@ export default function HomePage() {
         <input
           id="password"
           type="password"
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
           style={{ marginBottom: '1rem' }}
         />
 
-        <button type="submit">Log In</button>
+        <button type="submit">
+          {isSignUp ? 'Create Account' : 'Login'}
+        </button>
       </form>
+
+      <button
+        onClick={() => setIsSignUp((prev) => !prev)}
+        style={{ marginTop: '1rem' }}
+      >
+        {isSignUp ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
+      </button>
     </div>
   );
 }
