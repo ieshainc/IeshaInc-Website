@@ -1,21 +1,19 @@
-import './globals.css';
-import { Providers } from './providers'; // This is the file that wraps your app in <Provider>
+'use client';
 
-export const metadata = {
-  title: 'My App',
-};
+import { Provider } from 'react-redux';
+import { store } from './store';
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html>
       <body>
-        <Providers>
+        <Provider store={store}>
           {children}
-        </Providers>
+        </Provider>
       </body>
     </html>
   );
