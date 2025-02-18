@@ -5,6 +5,8 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setUser } from '../store/slices/userSlice';
+import styles from '../styles/GoogleAuth.module.css';
+import GoogleAuth from '../components/GoogleAuth';
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
@@ -24,30 +26,42 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column' }}>
-      <label htmlFor="loginEmail">Username or Email</label>
-      <input
-        id="loginEmail"
-        type="text"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        style={{ marginBottom: '1rem' }}
-      />
+    <div className={styles.authContainer}>
+      <form onSubmit={handleLogin} className={styles.form}>
+        <div className={styles.inputGroup}>
+          <label htmlFor="loginEmail">Email</label>
+          <input
+            id="loginEmail"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className={styles.input}
+          />
+        </div>
 
-      <label htmlFor="loginPassword">Password</label>
-      <input
-        id="loginPassword"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        style={{ marginBottom: '1rem' }}
-      />
+        <div className={styles.inputGroup}>
+          <label htmlFor="loginPassword">Password</label>
+          <input
+            id="loginPassword"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className={styles.input}
+          />
+        </div>
 
-      <button type="submit" style={{ marginBottom: '1rem' }}>
-        Log In
-      </button>
-    </form>
+        <button type="submit" className={styles.continueButton}>
+          Sign in with Email
+        </button>
+
+        <div className={styles.divider}>
+          <span>OR</span>
+        </div>
+
+        <GoogleAuth />
+      </form>
+    </div>
   );
 }
