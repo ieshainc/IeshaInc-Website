@@ -8,11 +8,19 @@ export default function AuthPageContent() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center' }}>
-      {/* Google Sign-In button, toggles, etc. */}
+    <div style={{textAlign: 'center' }}>
+      {/* Login or Signup form */}
       {isSignUp ? <SignupForm /> : <LoginForm />}
 
-      <button onClick={() => setIsSignUp(!isSignUp)}>
+      <button
+        onClick={() => setIsSignUp(!isSignUp)}
+        style={{
+          backgroundColor: 'transparent',
+          border: 'none',
+          color: 'blue',
+          cursor: 'pointer'
+        }}
+      >
         {isSignUp ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
       </button>
     </div>
