@@ -8,13 +8,14 @@ export default function AuthPageContent() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   return (
-    <div style={{textAlign: 'center' }}>
+    <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center', paddingBottom: '10px' }}>
       {/* Login or Signup form */}
       {isSignUp ? <SignupForm /> : <LoginForm />}
 
       <button
         onClick={() => setIsSignUp(!isSignUp)}
         style={{
+          marginTop: '1rem',
           backgroundColor: 'transparent',
           border: 'none',
           color: 'blue',

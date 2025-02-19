@@ -2,13 +2,15 @@
 // "use client" because we need to run client-side code (the Redux <Provider> is a client-side component)
 
 import { Provider } from 'react-redux';
-import { ReactNode } from 'react';
-import { store } from '../app/store'; 
+import { store } from './store';
+import AuthStateListener from './components/AuthStateListener';
 
-interface ProvidersProps {
-  children: ReactNode;
-}
-
-export function Providers({ children }: ProvidersProps) {
-  return <Provider store={store}>{children}</Provider>;
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <Provider store={store}>
+      <AuthStateListener>
+        {children}
+      </AuthStateListener>
+    </Provider>
+  );
 }
