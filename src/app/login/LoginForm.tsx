@@ -19,7 +19,11 @@ export default function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('User signed in:', userCredential.user.uid);
       
-      dispatch(setUser({ uid: userCredential.user.uid, email }));
+      dispatch(setUser({ 
+        uid: userCredential.user.uid, 
+        email, 
+        displayName: userCredential.user.displayName 
+      }));
     } catch (error) {
       console.error('Error logging in:', error);
     }

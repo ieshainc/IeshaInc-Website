@@ -19,7 +19,11 @@ export default function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created:', userCredential.user.uid);
       
-      dispatch(setUser({ uid: userCredential.user.uid, email }));
+      dispatch(setUser({ 
+        uid: userCredential.user.uid, 
+        email, 
+        displayName: userCredential.user.displayName 
+      }));
     } catch (error) {
       console.error('Error creating account:', error);
     }
