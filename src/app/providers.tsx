@@ -3,14 +3,11 @@
 
 import { Provider } from 'react-redux';
 import { store } from './store';
-import AuthStateListener from './components/AuthStateListener';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <AuthStateListener>
-        {children}
-      </AuthStateListener>
+      {children}
     </Provider>
   );
 }
