@@ -1,5 +1,15 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  // Initialize with null to prevent hydration mismatch
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  
+  // Only set the year after client-side hydration is complete
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
   
   return (
     <footer className="bg-white border-t border-gray-300 py-6">
@@ -11,7 +21,7 @@ export default function Footer() {
           </div>
           
           <div className="text-sm text-gray-500">
-            &copy; {currentYear} YourSite. All rights reserved.
+            &copy; {currentYear || ''} YourSite. All rights reserved.
           </div>
         </div>
       </div>
