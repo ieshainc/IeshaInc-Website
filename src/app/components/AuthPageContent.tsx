@@ -39,7 +39,7 @@ export default function AuthPageContent() {
       {isSignUp ? <SignupForm /> : <LoginForm />}
 
       <button
-        onClick={() => setIsSignUp(!isSignUp)}
+        onClick={toggleAuthMode}
         style={{
           marginTop: '1rem',
           backgroundColor: 'transparent',

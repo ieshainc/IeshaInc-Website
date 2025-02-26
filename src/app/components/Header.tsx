@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import AuthStateListener from './AuthStateListener';
-import UserProfileModal from './UserProfileModal';
 
 export default function Header() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -111,7 +110,6 @@ export default function Header() {
           )}
         </div>
       </div>
-      <UserProfileModal />
     </header>
   );
 } 
