@@ -3,6 +3,7 @@ import { Providers } from './providers';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import SessionManager from './components/SessionManager';
+import ClientOnly from './components/ClientOnly';
 
 export const metadata = {
   title: 'YourSite - Your Business',
@@ -18,10 +19,12 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen flex flex-col">
         <Providers>
-          <SessionManager />
+          <ClientOnly>
+            <SessionManager />
           <Header />
           <main className="flex-grow">{children}</main>
           <Footer />
+          </ClientOnly>
         </Providers>
       </body>
     </html>
