@@ -1,10 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from './slices/userSlice';
+import documentsReducer from './slices/documentsSlice';
 
 export const store = configureStore({
   reducer: {
-    user: userReducer, // add more slices if you have them
+    user: userReducer,
+    documents: documentsReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore non-serializable values in the specified paths
+        ignoredActions: ['documents/fetchUserDocuments/fulfilled'],
+        ignoredPaths: ['documents.items']
+      },
+    }),
 });
 
 // Types for convenience (if using TypeScript)
