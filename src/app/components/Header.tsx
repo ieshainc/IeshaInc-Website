@@ -25,25 +25,35 @@ export default function Header() {
         <div className="hidden md:flex items-center justify-between py-4">
           <div className="text-2xl font-bold text-indigo-600">YourSite</div>
           <nav className="flex items-center space-x-6">
-            <Link 
-              href="/" 
-              className={`text-gray-900 hover:text-gray-600 ${
-                pathname === '/' ? 'font-medium' : ''
-              }`}
-            >
-              Home
-            </Link>
+            {pathname !== '/' && (
+              <Link 
+                href="/" 
+                className="text-gray-900 hover:text-gray-600"
+              >
+                Home
+              </Link>
+            )}
             {/* Add more navigation links as needed */}
             
             {isAuthenticated && (
-              <Link 
-                href="/profile" 
-                className={`text-gray-900 hover:text-gray-600 ${
-                  pathname === '/profile' ? 'font-medium' : ''
-                }`}
-              >
-                My Profile
-              </Link>
+              <>
+                {pathname !== '/profile' && (
+                  <Link 
+                    href="/profile" 
+                    className="text-gray-900 hover:text-gray-600"
+                  >
+                    My Profile
+                  </Link>
+                )}
+                {pathname !== '/client-portal' && (
+                  <Link 
+                    href="/client-portal" 
+                    className="text-gray-900 hover:text-gray-600"
+                  >
+                    Client Portal
+                  </Link>
+                )}
+              </>
             )}
             
             <AuthStateListener />
@@ -74,27 +84,38 @@ export default function Header() {
           {/* Mobile Menu */}
           {isMenuOpen && (
             <nav className="bg-white py-4 space-y-4">
-              <Link 
-                href="/" 
-                className={`block px-4 py-2 text-gray-900 hover:bg-gray-100 ${
-                  pathname === '/' ? 'font-medium' : ''
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
+              {pathname !== '/' && (
+                <Link 
+                  href="/" 
+                  className="block px-4 py-2 text-gray-900 hover:bg-gray-100"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
+              )}
               {/* Add more navigation links as needed */}
               
               {isAuthenticated && (
-                <Link 
-                  href="/profile" 
-                  className={`block px-4 py-2 text-gray-900 hover:bg-gray-100 ${
-                    pathname === '/profile' ? 'font-medium' : ''
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Profile
-                </Link>
+                <>
+                  {pathname !== '/profile' && (
+                    <Link 
+                      href="/profile" 
+                      className="block px-4 py-2 text-gray-900 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                  )}
+                  {pathname !== '/client-portal' && (
+                    <Link 
+                      href="/client-portal" 
+                      className="block px-4 py-2 text-gray-900 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Client Portal
+                    </Link>
+                  )}
+                </>
               )}
               
               <div className="px-4 py-2">
