@@ -54,7 +54,7 @@ export default function About() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <p className="text-gray-600">
                 Founded in 2025, lesha Inc started as a small tax consultation firm. 
-                Over the years, we've expanded to serve clients nationwide, staying 
+                Over the years, we&apos;ve expanded to serve clients nationwide, staying 
                 committed to our core values of integrity, accuracy, and exceptional 
                 customer care.
               </p>

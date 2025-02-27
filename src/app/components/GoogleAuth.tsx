@@ -7,11 +7,13 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setUser, clearUser } from '../store/slices/userSlice';
 import { useState, useEffect } from 'react';
 import { RootState } from '../store';
+import { useRouter } from 'next/navigation';
 
 import styles from '../styles/GoogleAuth.module.css'
 
 export default function GoogleAuth() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const user = useSelector((state: RootState) => state.user);
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -55,6 +57,10 @@ export default function GoogleAuth() {
         provider: 'google.com'
       }));
       
+      // After successful login, redirect to home page
+      // The AuthProfileManager will handle any redirect to onboarding if needed
+      console.log('Google login successful, redirecting to home page');
+      router.push('/');
     } catch (error) {
       console.error('Error signing in with Google:', error);
 

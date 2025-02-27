@@ -9,9 +9,11 @@ import { setUser, clearUser } from '../store/slices/userSlice';
 import styles from '../styles/GoogleAuth.module.css';
 import GoogleAuth from '../components/GoogleAuth';
 import { RootState } from '../store';
+import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const user = useSelector((state: RootState) => state.user);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +44,11 @@ export default function LoginForm() {
       // Clear form fields after successful login
       setEmail('');
       setPassword('');
+      
+      // After successful login, redirect to home page
+      // The AuthProfileManager will handle any redirect to onboarding if needed
+      console.log('Login successful, redirecting to home page');
+      router.push('/');
     } catch (error) {
       console.error('Error logging in:', error);
     } finally {
