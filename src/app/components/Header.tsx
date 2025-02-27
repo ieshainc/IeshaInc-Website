@@ -3,21 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import AuthStateListener from './AuthStateListener';
 
 export default function Header() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+  const user = useSelector((state: RootState) => state.user);
+  const isAuthenticated = !!user.uid;
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -41,7 +35,7 @@ export default function Header() {
             </Link>
             {/* Add more navigation links as needed */}
             
-            {currentUser && (
+            {isAuthenticated && (
               <Link 
                 href="/profile" 
                 className={`text-gray-900 hover:text-gray-600 ${
@@ -91,7 +85,7 @@ export default function Header() {
               </Link>
               {/* Add more navigation links as needed */}
               
-              {currentUser && (
+              {isAuthenticated && (
                 <Link 
                   href="/profile" 
                   className={`block px-4 py-2 text-gray-900 hover:bg-gray-100 ${

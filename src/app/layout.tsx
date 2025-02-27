@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import SessionManager from './components/SessionManager';
 import ClientOnly from './components/ClientOnly';
+import AuthProfileManager from './components/AuthProfileManager';
 
 export const metadata = {
   title: 'YourSite - Your Business',
@@ -21,9 +22,10 @@ export default function RootLayout({
         <Providers>
           <ClientOnly>
             <SessionManager />
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
+            <AuthProfileManager />
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
           </ClientOnly>
         </Providers>
       </body>
