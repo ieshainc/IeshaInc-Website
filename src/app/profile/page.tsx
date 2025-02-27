@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { db } from '../services/firebase';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -15,9 +14,9 @@ import UserProfileFields, {
   ProfileData,
 } from '../components/userProfile/UserProfileFields';
 import Link from 'next/link';
+import RouteGuard from '../components/RouteGuard';
 
 export default function ProfilePage() {
-  const router = useRouter();
   const userAuth = useSelector((state: RootState) => state.user);
   const [profile, setProfile] = useState<ProfileData>({
     firstName: '',
@@ -32,43 +31,39 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Check if user is authenticated
+  // Fetch profile data when component mounts
   useEffect(() => {
-    if (!userAuth.uid) {
-      router.push('/auth?form=login');
-    } else {
-      setLoadingProfile(true);
-      
-      // Fetch profile data
-      const fetchProfile = async () => {
-        try {
-          if (userAuth.uid) {
-            const userDocRef = doc(db, 'users', userAuth.uid);
-            const docSnap = await getDoc(userDocRef);
-            
-            if (docSnap.exists()) {
-              const data = docSnap.data() as Partial<ProfileData>;
-              setProfile(prev => ({
-                ...prev,
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
-                phone: data.phone || '',
-                address: data.address || '',
-                hasPin: data.hasPin ?? false,
-                onboardingSkipped: data.onboardingSkipped ?? false,
-              }));
-            }
+    setLoadingProfile(true);
+    
+    // Fetch profile data
+    const fetchProfile = async () => {
+      try {
+        if (userAuth.uid) {
+          const userDocRef = doc(db, 'users', userAuth.uid);
+          const docSnap = await getDoc(userDocRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Partial<ProfileData>;
+            setProfile(prev => ({
+              ...prev,
+              firstName: data.firstName || '',
+              lastName: data.lastName || '',
+              phone: data.phone || '',
+              address: data.address || '',
+              hasPin: data.hasPin ?? false,
+              onboardingSkipped: data.onboardingSkipped ?? false,
+            }));
           }
-        } catch (err) {
-          console.error('Error fetching profile:', err);
-        } finally {
-          setLoadingProfile(false);
         }
-      };
-      
-      fetchProfile();
-    }
-  }, [userAuth.uid, router]);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [userAuth.uid]);
 
   // Reset status messages when editing state changes
   useEffect(() => {
@@ -234,61 +229,63 @@ export default function ProfilePage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8">My Profile</h1>
-      
-      {saveSuccess && (
-        <div className="mb-6 rounded-md bg-green-50 p-4">
-          <div className="flex">
-            <div>
-              <p className="text-sm font-medium text-green-800">
-                Profile updated successfully!
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {saveError && (
-        <div className="mb-6 rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div>
-              <p className="text-sm font-medium text-red-800">{saveError}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          {isEditing ? (
-            <form onSubmit={handleSubmit}>
-              <UserProfileFields profile={profile} setProfile={setProfile} />
-              <div className="mt-8 space-x-4">
-                <button
-                  type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Cancel
-                </button>
+    <RouteGuard requireAuth={true} redirectUnauthenticatedTo='/auth'>
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8">My Profile</h1>
+        
+        {saveSuccess && (
+          <div className="mb-6 rounded-md bg-green-50 p-4">
+            <div className="flex">
+              <div>
+                <p className="text-sm font-medium text-green-800">
+                  Profile updated successfully!
+                </p>
               </div>
-            </form>
-          ) : (
-            <ViewOnlyProfile />
-          )}
+            </div>
+          </div>
+        )}
+        
+        {saveError && (
+          <div className="mb-6 rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div>
+                <p className="text-sm font-medium text-red-800">{saveError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            {isEditing ? (
+              <form onSubmit={handleSubmit}>
+                <UserProfileFields profile={profile} setProfile={setProfile} />
+                <div className="mt-8 space-x-4">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <ViewOnlyProfile />
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-6 text-sm text-gray-500">
+          <p>Authentication method: {userAuth.provider === 'password' ? 'Email' : 'Google'}</p>
         </div>
       </div>
-      
-      <div className="mt-6 text-sm text-gray-500">
-        <p>Authentication method: {userAuth.provider === 'password' ? 'Email' : 'Google'}</p>
-      </div>
-    </div>
+    </RouteGuard>
   );
 } 

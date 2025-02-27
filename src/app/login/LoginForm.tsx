@@ -18,6 +18,7 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Clear input fields when user logs in with email/password
   useEffect(() => {
@@ -30,6 +31,8 @@ export default function LoginForm() {
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setError(null); // Clear any previous errors
+    
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('User signed in:', userCredential.user.uid);
@@ -49,8 +52,35 @@ export default function LoginForm() {
       // The AuthProfileManager will handle any redirect to onboarding if needed
       console.log('Login successful, redirecting to home page');
       router.push('/');
-    } catch (error) {
+    } catch (error: unknown) {
+      // Handle different error types without revealing specific credentials issues
       console.error('Error logging in:', error);
+      
+      // Cast to the Firebase error type with a code property
+      const firebaseError = error as { code?: string; message?: string };
+      
+      // Firebase authentication error codes
+      switch(firebaseError.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-email':
+          // Generic error for all credential issues (security best practice)
+          setError('Invalid login credentials. Please check your information and try again.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Too many failed login attempts. Please try again later or reset your password.');
+          break;
+        case 'auth/user-disabled':
+          setError('This account has been disabled. Please contact support.');
+          break;
+        case 'auth/network-request-failed':
+          setError('Network error. Please check your internet connection and try again.');
+          break;
+        default:
+          setError('An error occurred during sign in. Please try again.');
+          break;
+      }
     } finally {
       setLoading(false);
     }
@@ -74,6 +104,12 @@ export default function LoginForm() {
       <form onSubmit={handleLogin} className={styles.form}>
         {!(user?.uid && user?.provider === 'password') ? (
           <>
+            {error && (
+              <div className={styles.errorMessage}>
+                {error}
+              </div>
+            )}
+            
             <div className={styles.inputGroup}>
               <label htmlFor="loginEmail">Email</label>
               <input
