@@ -13,16 +13,19 @@ export default function AuthProfileManager() {
   const user = useSelector((state: RootState) => state.user);
   const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
 
-  // Skip on these paths even if profile is incomplete
+  // Paths to exclude from onboarding checks
   const excludedPaths = ['/auth', '/onboarding', '/logout'];
   const shouldSkipRedirect = excludedPaths.some(path => pathname.startsWith(path));
   
-  // Reset the check when user changes or path changes to key areas
+  // Reset the check when user changes or path changes to any non-excluded path
   useEffect(() => {
-    if (user.uid && (pathname === '/' || pathname === '/profile')) {
+    // If user is logged in and we're on a path that's not excluded,
+    // reset the profile check. This ensures any new pages added to the app 
+    // will automatically check for onboarding completion.
+    if (user.uid && !shouldSkipRedirect) {
       setHasCheckedProfile(false);
     }
-  }, [user.uid, pathname]);
+  }, [user.uid, pathname, shouldSkipRedirect]);
 
   useEffect(() => {
     // Skip if we've already checked, if user is not authenticated, or we're on excluded paths
