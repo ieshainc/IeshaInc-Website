@@ -14,16 +14,20 @@ export default function SessionManager() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        const provider = user.providerData[0]?.providerId || null;
+        
         dispatch(setUser({
           uid: user.uid,
           email: user.email || null,
-          displayName: user.displayName || null
+          displayName: user.displayName || null,
+          provider: provider
         }));
       } else {
         dispatch(setUser({
           uid: null,
           email: null,
-          displayName: null
+          displayName: null,
+          provider: null
         }));
       }
     });

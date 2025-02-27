@@ -48,7 +48,12 @@ export default function GoogleAuth() {
       console.log('User signed in successfully with Google:', result.user);
       
       // Dispatch user info to Redux
-      dispatch(setUser({ uid: result.user.uid, email: result.user.email || '', displayName: result.user.displayName || '' }));
+      dispatch(setUser({ 
+        uid: result.user.uid, 
+        email: result.user.email || '', 
+        displayName: result.user.displayName || '',
+        provider: 'google.com'
+      }));
       
     } catch (error) {
       console.error('Error signing in with Google:', error);
@@ -91,7 +96,7 @@ export default function GoogleAuth() {
 
   return (
     <div className={styles.authContainer}>
-      {!user?.uid ? (
+      {!(user?.uid && user?.provider === 'google.com') ? (
         <button className={styles['gsi-material-button']} onClick={signInWithGoogle} disabled={loading}>
           <div className={styles['gsi-material-button-content-wrapper']}>
             <div className={styles['gsi-material-button-icon']}>

@@ -1,11 +1,11 @@
-import AuthPageContent from './components/AuthPageContent';
+import About from './about/page';
 import RouteGuard from './components/RouteGuard';
 
 export default function HomePage() {
   return (
     <RouteGuard requireAuth={false}>
-      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-        <AuthPageContent />
+      <div>
+        <About />
       </div>
     </RouteGuard>
   );

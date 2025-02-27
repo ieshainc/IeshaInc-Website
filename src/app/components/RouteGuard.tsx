@@ -15,7 +15,7 @@ interface RouteGuardProps {
 export default function RouteGuard({ 
   children, 
   requireAuth = true,
-  redirectAuthenticatedTo = '/dashboard',
+  redirectAuthenticatedTo = '/about',
   redirectUnauthenticatedTo = '/auth'
 }: RouteGuardProps) {
   const router = useRouter();
