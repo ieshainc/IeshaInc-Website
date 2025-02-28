@@ -1,36 +1,65 @@
-'use client';
-
+"use client";
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { useRouter } from 'next/navigation';
-import { useAppSelector } from '../hooks/useAppSelector';
-import { selectUser } from '../store/slices/userSlice';
+import { isUserAdmin } from '../utils/admin';
 import RouteGuard from './RouteGuard';
+import LoadingSpinner from './LoadingSpinner';
 
-interface AdminRouteProps {
-  children: React.ReactNode;
-}
-
-export default function AdminRoute({ children }: AdminRouteProps) {
-  const [authorized, setAuthorized] = useState(false);
+export default function AdminRoute({ children }: { children: React.ReactNode }) {
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const user = useSelector((state: RootState) => state.user);
   const router = useRouter();
-  const user = useAppSelector(selectUser);
-  
-  useEffect(() => {
-    // Check if the current user is an admin (using the email from the example)
-    const isAdmin = user?.email === 'contact@ieshainc.com';
-    
-    if (!isAdmin) {
-      router.push('/');
-    } else {
-      setAuthorized(true);
-    }
-  }, [user, router]);
 
-  // We're using our existing RouteGuard component for base authentication
-  // and adding an additional admin check
+  useEffect(() => {
+    // This function checks if the current user has admin privileges
+    const checkAdminStatus = async () => {
+      // If no user is logged in, set authorized to false
+      // This will be handled by the RouteGuard which will redirect to login
+      if (!user.uid) {
+        setAuthorized(false);
+        return;
+      }
+
+      try {
+        // Check if the user has admin role
+        const isAdmin = await isUserAdmin(user.uid);
+        
+        if (!isAdmin) {
+          // User is logged in but not an admin - redirect to home page
+          console.log('User is not an admin, redirecting to home');
+          router.push('/');
+          setAuthorized(false);
+        } else {
+          // User is both logged in and an admin
+          setAuthorized(true);
+        }
+      } catch (error) {
+        console.error('Error verifying admin status:', error);
+        // On error, redirect to home page
+        router.push('/');
+        setAuthorized(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user.uid, router]);
+
+  // Show loading spinner while checking admin status
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // Use RouteGuard to handle authentication checking and redirect to login if needed
+  // Only render children if the user is authorized (is an admin)
   return (
-    <RouteGuard requireAuth={true}>
+    <RouteGuard requireAuth={true} redirectUnauthenticatedTo="/login">
       {authorized ? children : null}
     </RouteGuard>
   );
-} 
+}

@@ -2,12 +2,13 @@
 
 import { useSelector } from 'react-redux';
 import { GoogleAuthProvider, signInWithPopup, signOut, browserPopupRedirectResolver } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setUser, clearUser } from '../store/slices/userSlice';
 import { useState, useEffect } from 'react';
 import { RootState } from '../store';
 import { useRouter } from 'next/navigation';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import styles from '../styles/GoogleAuth.module.css'
 
@@ -49,16 +50,70 @@ export default function GoogleAuth() {
 
       console.log('User signed in successfully with Google:', result.user);
       
+      // CRITICAL: Ensure user data is saved to Firestore
+      // We'll retry this operation if it fails to ensure consistency
+      let firestoreSuccess = false;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (!firestoreSuccess && retryCount < maxRetries) {
+        try {
+          const userDocRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          // User data to save in Firestore - ensure email is always included
+          const userData = {
+            email: result.user.email, // This is the critical field we need to ensure is saved
+            displayName: result.user.displayName,
+            provider: 'google.com',
+            lastLogin: new Date()
+          };
+          
+          if (!userDoc.exists()) {
+            // Create new user document if it doesn't exist
+            await setDoc(userDocRef, {
+              ...userData,
+              createdAt: new Date(),
+              role: null,
+              onboardingCompleted: false
+            });
+            console.log('Successfully created new user document for Google user');
+          } else {
+            // Update existing document, ensuring email field is set
+            await setDoc(userDocRef, userData, { merge: true });
+            console.log('Successfully updated existing user document for Google user');
+          }
+          
+          firestoreSuccess = true;
+        } catch (error) {
+          retryCount++;
+          console.error(`Error saving user data to Firestore (Attempt ${retryCount}):`, error);
+          
+          if (retryCount < maxRetries) {
+            console.log(`Retrying Firestore operation in 1 second...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
+      if (!firestoreSuccess) {
+        console.error('Failed to save user data to Firestore after multiple attempts');
+        // We'll continue with authentication but this is a critical error to monitor
+      }
+      
       // Dispatch user info to Redux
-      dispatch(setUser({ 
-        uid: result.user.uid, 
-        email: result.user.email || '', 
+      dispatch(setUser({
+        uid: result.user.uid,
+        email: result.user.email || '',
         displayName: result.user.displayName || '',
-        provider: 'google.com'
+        provider: 'google.com',
+        role: null
       }));
       
+      // Intentional delay to ensure Firebase operations complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // After successful login, redirect to home page
-      // The AuthProfileManager will handle any redirect to onboarding if needed
       console.log('Google login successful, redirecting to home page');
       router.push('/');
     } catch (error) {
@@ -74,7 +129,7 @@ export default function GoogleAuth() {
     }
     finally {
         setLoading(false);
-      }
+    }
   };
 
   const signOutWithGoogle = async () => {
