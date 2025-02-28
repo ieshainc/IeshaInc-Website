@@ -58,10 +58,7 @@ export default function OnboardingPage() {
             // Instead of redirecting here, we'll let the UI handle this information
             if (data.firstName && data.lastName && data.phone && data.address) {
               // Profile is complete, inform user and offer navigation options
-              setError('Your profile is already complete. Redirecting to profile page...');
-              setTimeout(() => {
-                router.push('/profile');
-              }, 2000);
+              setError('Your profile is already complete. Please use the navigation menu to continue.');
               return;
             }
           }
@@ -104,12 +101,17 @@ export default function OnboardingPage() {
       const userDocRef = doc(db, 'users', uid);
       await setDoc(userDocRef, profile, { merge: true });
       
-      // Redirect to home page with query parameter indicating successful profile completion
-      router.push('/?profileCompleted=true');
+      // Instead of direct navigation, set a success message and let the RouteGuard handle navigation
+      setError('Profile saved successfully! You will be redirected to the home page.');
+      setSaving(false);
+      
+      // Set a slight delay to let the user see the success message
+      setTimeout(() => {
+        window.location.href = '/?profileCompleted=true';
+      }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
       setError('Error saving profile. Please try again.');
-    } finally {
       setSaving(false);
     }
   };
@@ -127,12 +129,13 @@ export default function OnboardingPage() {
           { merge: true }
         );
         console.log('Onboarding skipped flag saved to user profile');
+        
+        // Instead of router.push, use window.location for a clean navigation
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Error saving skip preference:', error);
-    } finally {
       setSaving(false);
-      router.push('/');
     }
   };
 
@@ -158,6 +161,9 @@ export default function OnboardingPage() {
             <p className="mt-2 text-gray-600">
               Tell us a bit about yourself to get started.
             </p>
+            <div className="hidden">
+              User ID: {userAuth.uid || 'Not authenticated'}
+            </div>
           </div>
 
           {error && (

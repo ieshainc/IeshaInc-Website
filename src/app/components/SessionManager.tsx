@@ -23,6 +23,7 @@ export default function SessionManager() {
           const ensureUserDocumentWithRetry = async (maxRetries = 3) => {
             let retryCount = 0;
             let success = false;
+            let userRole = null;
             
             while (!success && retryCount < maxRetries) {
               try {
@@ -32,7 +33,9 @@ export default function SessionManager() {
                 if (userDoc.exists()) {
                   // User document exists - get role and ensure email is up to date
                   const userData = userDoc.data();
-                  const role = userData.role || null;
+                  userRole = userData.role; // Preserve the role
+                  
+                  console.log('SessionManager - Found user with role:', userRole);
                   
                   // CRITICAL: Always ensure email field is present and correct
                   // This is especially important for OAuth users
@@ -41,7 +44,7 @@ export default function SessionManager() {
                     await setDoc(userDocRef, { 
                       email: user.email,
                       lastLogin: new Date() 
-                    }, { merge: true });
+                    }, { merge: true }); // Use merge to preserve role
                   } else {
                     // Just update last login timestamp
                     await setDoc(userDocRef, { lastLogin: new Date() }, { merge: true });
@@ -56,7 +59,7 @@ export default function SessionManager() {
                     email: user.email || null,
                     displayName: user.displayName || null,
                     provider: provider,
-                    role: role
+                    role: userRole // Use preserved role
                   }));
                 } else {
                   // No user document - create one with complete info from Auth
@@ -94,14 +97,14 @@ export default function SessionManager() {
               }
             }
             
-            return success;
+            return { success, role: userRole };
           };
           
           // Execute the retry function
-          const firestoreSuccess = await ensureUserDocumentWithRetry();
+          const result = await ensureUserDocumentWithRetry();
           
           // If Firestore operations failed after retries, still update Redux state
-          if (!firestoreSuccess) {
+          if (!result.success) {
             console.error('Failed to ensure user document in Firestore after multiple retries');
             dispatch(setUser({
               uid: user.uid,

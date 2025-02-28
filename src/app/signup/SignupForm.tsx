@@ -8,11 +8,9 @@ import { setUser } from '../store/slices/userSlice';
 import GoogleAuth from '../components/GoogleAuth';
 import styles from '../styles/GoogleAuth.module.css';
 import { doc, setDoc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
 
 export default function SignupForm() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -73,13 +71,11 @@ export default function SignupForm() {
         role: null
       }));
       
-      // Give Firestore operations time to complete before redirecting
-      console.log('Account created successfully, redirecting to onboarding...');
+      // No longer use direct navigation
+      console.log('Account created successfully - auth system will handle redirection');
       
-      // Intentional delay to ensure Firebase operations complete before redirect
-      setTimeout(() => {
-        router.push('/onboarding');
-      }, 1000);
+      // Clear loading state after account creation
+      setLoading(false);
       
     } catch (error) {
       console.error('Error creating account:', error);

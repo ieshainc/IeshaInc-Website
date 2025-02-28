@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { selectUser } from '../store/slices/userSlice';
+import { auth } from '../services/firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface RouteGuardProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  redirectAuthenticatedTo?: string; // New prop for custom redirect path for authenticated users
-  redirectUnauthenticatedTo?: string; // New prop for custom redirect path for unauthenticated users
+  redirectAuthenticatedTo?: string; 
+  redirectUnauthenticatedTo?: string; 
 }
 
 export default function RouteGuard({ 
@@ -19,11 +21,23 @@ export default function RouteGuard({
   redirectUnauthenticatedTo = '/auth'
 }: RouteGuardProps) {
   const router = useRouter();
-  const user = useAppSelector(selectUser);
+  const userFromRedux = useAppSelector(selectUser);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   
-  // Helper function to check if user is authenticated
-  const isAuthenticated = user && user.uid !== null;
+  // Listen for Firebase auth changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      setFirebaseUser(authUser);
+      console.log('RouteGuard - Firebase auth state changed:', 
+        authUser ? 'Authenticated' : 'Not authenticated');
+    });
+    return () => unsubscribe();
+  }, []);
+  
+  // Helper function to check if user is authenticated based on both Firebase and Redux
+  const isAuthenticated = (userFromRedux && userFromRedux.uid !== null) || 
+                          (firebaseUser !== null);
 
   useEffect(() => {
     // For debugging purposes only
@@ -31,7 +45,9 @@ export default function RouteGuard({
       console.log('RouteGuard - Auth state:', { 
         isAuthenticated, 
         requireAuth, 
-        user: user?.uid ? 'Authenticated' : 'Unauthenticated' 
+        reduxAuth: !!userFromRedux?.uid,
+        firebaseAuth: !!firebaseUser,
+        path: window.location.pathname
       });
     }
 
@@ -39,21 +55,25 @@ export default function RouteGuard({
     const handleRouting = () => {
       if (requireAuth && !isAuthenticated) {
         // Case 1: Route requires auth but user is not authenticated
+        console.log('RouteGuard - User not authenticated, redirecting to:', redirectUnauthenticatedTo);
         router.push(redirectUnauthenticatedTo);
         return false;
       } 
       
       if (!requireAuth && isAuthenticated) {
         // Case 2: Route is for non-authenticated users but user is authenticated
+        console.log('RouteGuard - User already authenticated, redirecting to:', redirectAuthenticatedTo);
         router.push(redirectAuthenticatedTo);
         return false;
       }
       
       // Case 3: Authentication requirements are met
+      console.log('RouteGuard - Authentication requirements met, staying on page');
       return true;
     };
 
     // Allow component to render first, then check routing
+    // Use a longer delay to ensure Firebase auth is fully initialized
     const timeoutId = setTimeout(() => {
       const canProceed = handleRouting();
       setIsChecking(false);
@@ -64,11 +84,12 @@ export default function RouteGuard({
           console.log('RouteGuard - Redirecting user');
         }
       }
-    }, 100);
+    }, 1000); // Increased to 1000ms to ensure Firebase auth is properly initialized
 
     return () => clearTimeout(timeoutId);
   }, [
-    user, 
+    userFromRedux, 
+    firebaseUser,
     requireAuth, 
     router, 
     isAuthenticated, 

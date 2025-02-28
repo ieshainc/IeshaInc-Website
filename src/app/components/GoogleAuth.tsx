@@ -7,14 +7,12 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setUser, clearUser } from '../store/slices/userSlice';
 import { useState, useEffect } from 'react';
 import { RootState } from '../store';
-import { useRouter } from 'next/navigation';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import styles from '../styles/GoogleAuth.module.css'
 
 export default function GoogleAuth() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const user = useSelector((state: RootState) => state.user);
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -55,33 +53,42 @@ export default function GoogleAuth() {
       let firestoreSuccess = false;
       let retryCount = 0;
       const maxRetries = 3;
+      let userRole = null; // Will store user role if existing
       
       while (!firestoreSuccess && retryCount < maxRetries) {
         try {
           const userDocRef = doc(db, 'users', result.user.uid);
           const userDoc = await getDoc(userDocRef);
           
-          // User data to save in Firestore - ensure email is always included
-          const userData = {
-            email: result.user.email, // This is the critical field we need to ensure is saved
-            displayName: result.user.displayName,
-            provider: 'google.com',
-            lastLogin: new Date()
-          };
-          
-          if (!userDoc.exists()) {
+          if (userDoc.exists()) {
+            // Extract existing user data, especially the role
+            const existingData = userDoc.data();
+            userRole = existingData.role; // Store the existing role
+            
+            console.log('Found existing user with role:', userRole);
+            
+            // Update only specific fields, preserving role
+            await setDoc(userDocRef, {
+              email: result.user.email,
+              displayName: result.user.displayName,
+              provider: 'google.com',
+              lastLogin: new Date()
+            }, { merge: true });
+            
+            console.log('Successfully updated existing user document for Google user (preserved role)');
+          } else {
             // Create new user document if it doesn't exist
             await setDoc(userDocRef, {
-              ...userData,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              provider: 'google.com',
               createdAt: new Date(),
-              role: null,
+              lastLogin: new Date(),
+              role: null, // New users start with no role
               onboardingCompleted: false
             });
+            
             console.log('Successfully created new user document for Google user');
-          } else {
-            // Update existing document, ensuring email field is set
-            await setDoc(userDocRef, userData, { merge: true });
-            console.log('Successfully updated existing user document for Google user');
           }
           
           firestoreSuccess = true;
@@ -101,21 +108,20 @@ export default function GoogleAuth() {
         // We'll continue with authentication but this is a critical error to monitor
       }
       
-      // Dispatch user info to Redux
+      // Dispatch user info to Redux, including the PRESERVED role
       dispatch(setUser({
         uid: result.user.uid,
         email: result.user.email || '',
         displayName: result.user.displayName || '',
         provider: 'google.com',
-        role: null
+        role: userRole // Use the preserved role here
       }));
       
       // Intentional delay to ensure Firebase operations complete
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // After successful login, redirect to home page
-      console.log('Google login successful, redirecting to home page');
-      router.push('/');
+      // Let RouteGuard handle redirects rather than forcing a specific route
+      console.log('Google login successful - RouteGuard will handle redirection');
     } catch (error) {
       console.error('Error signing in with Google:', error);
 
@@ -141,6 +147,8 @@ export default function GoogleAuth() {
       // Clear user from Redux
       dispatch(clearUser());
       
+      // Let RouteGuard handle redirects
+      // No explicit navigation here
     } catch (error) {
       console.error('Error signing out:', error);
       alert('Failed to sign out. Please try again.');
