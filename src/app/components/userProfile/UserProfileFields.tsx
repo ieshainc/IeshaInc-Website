@@ -61,7 +61,7 @@ export default function UserProfileFields({ profile, setProfile }: UserProfileFi
 
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number
+            Phone Number <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -70,6 +70,7 @@ export default function UserProfileFields({ profile, setProfile }: UserProfileFi
             value={profile.phone}
             onChange={handleChange}
             placeholder="Digits only (no spaces or dashes)"
+            required
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
           <p className="mt-1 text-xs text-gray-500">
@@ -96,7 +97,7 @@ export default function UserProfileFields({ profile, setProfile }: UserProfileFi
 
       <div>
         <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-          Address
+          Address <span className="text-red-500">*</span>
         </label>
         <textarea
           id="address"
@@ -104,6 +105,7 @@ export default function UserProfileFields({ profile, setProfile }: UserProfileFi
           value={profile.address}
           onChange={handleChange}
           rows={4}
+          required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           placeholder="Enter your full address"
         />

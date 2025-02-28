@@ -59,7 +59,7 @@ export default function AuthProfileManager() {
           }
           
           // Check if profile is incomplete (missing required fields)
-          if (!userData.firstName || !userData.lastName) {
+          if (!userData.firstName || !userData.lastName || !userData.phone || !userData.address) {
             console.log('User profile is incomplete, redirecting to onboarding');
             // Redirect to onboarding if not already there
             if (pathname !== '/onboarding') {

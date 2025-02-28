@@ -31,39 +31,43 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Fetch profile data when component mounts
+  // Check if user is authenticated
   useEffect(() => {
-    setLoadingProfile(true);
-    
-    // Fetch profile data
-    const fetchProfile = async () => {
-      try {
-        if (userAuth.uid) {
-          const userDocRef = doc(db, 'users', userAuth.uid);
-          const docSnap = await getDoc(userDocRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data() as Partial<ProfileData>;
-            setProfile(prev => ({
-              ...prev,
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              phone: data.phone || '',
-              address: data.address || '',
-              hasPin: data.hasPin ?? false,
-              onboardingSkipped: data.onboardingSkipped ?? false,
-            }));
+    if (!userAuth.uid) {
+      router.push('/auth?form=login');
+    } else {
+      setLoadingProfile(true);
+      
+      // Fetch profile data
+      const fetchProfile = async () => {
+        try {
+          if (userAuth.uid) {
+            const userDocRef = doc(db, 'users', userAuth.uid);
+            const docSnap = await getDoc(userDocRef);
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data() as Partial<ProfileData>;
+              setProfile(prev => ({
+                ...prev,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                phone: data.phone || '',
+                address: data.address || '',
+                hasPin: data.hasPin ?? false,
+                onboardingSkipped: data.onboardingSkipped ?? false,
+              }));
+            }
           }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+        } finally {
+          setLoadingProfile(false);
         }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    
-    fetchProfile();
-  }, [userAuth.uid]);
+      };
+      
+      fetchProfile();
+    }
+  }, [userAuth.uid, router]);
 
   // Reset status messages when editing state changes
   useEffect(() => {
@@ -86,11 +90,24 @@ export default function ProfilePage() {
     const trimmedPhone = phone.trim();
     const trimmedAddress = address.trim();
 
+    // Check that all required fields are provided
     if (!trimmedFirstName || !trimmedLastName) {
       setSaveError('First and last name are required.');
       return;
     }
-    if (trimmedPhone && !/^\d+$/.test(trimmedPhone)) {
+    
+    if (!trimmedPhone) {
+      setSaveError('Phone number is required.');
+      return;
+    }
+    
+    if (!trimmedAddress) {
+      setSaveError('Address is required.');
+      return;
+    }
+    
+    // Validate phone number format
+    if (!/^\d+$/.test(trimmedPhone)) {
       setSaveError('Phone must contain only digits.');
       return;
     }
@@ -120,7 +137,7 @@ export default function ProfilePage() {
 
   const ViewOnlyProfile = () => {
     // Check if profile is incomplete
-    const isProfileIncomplete = !profile.firstName || !profile.lastName;
+    const isProfileIncomplete = !profile.firstName || !profile.lastName || !profile.phone || !profile.address;
 
     return (
       <div className="space-y-6">
@@ -222,9 +239,11 @@ export default function ProfilePage() {
 
   if (loadingProfile) {
     return (
-      <div className="py-6 flex justify-center">
-        <div className="animate-pulse text-indigo-600">Loading profile...</div>
-      </div>
+      <RouteGuard requireAuth={true} redirectUnauthenticatedTo='/auth'>
+        <div className="py-6 flex justify-center">
+          <div className="animate-pulse text-indigo-600">Loading profile...</div>
+        </div>
+      </RouteGuard>
     );
   }
 
