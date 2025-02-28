@@ -55,44 +55,24 @@ export default function AdminUserFiles({ userId }: { userId: string }) {
     let unsubscribeCentral: (() => void) | null = null;
     let unsubscribeUser: (() => void) | null = null;
 
-    try {
-      // Try first looking in the centralized documents collection with userId field
-      const centralDocsRef = collection(db, 'documents');
-      const centralQuery = query(
-        centralDocsRef,
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-      );
+    const fetchFiles = async () => {
+      try {
+        // Try first looking in the centralized documents collection with userId field
+        console.log('Fetching files for user:', userId);
+        const centralDocsRef = collection(db, 'documents');
+        const centralQuery = query(
+          centralDocsRef,
+          where("userId", "==", userId),
+          orderBy("createdAt", "desc")
+        );
 
-      // Set up subscription to central documents
-      unsubscribeCentral = onSnapshot(centralQuery, (snapshot) => {
-        // If we got documents from central collection, use those
-        if (!snapshot.empty) {
-          const fileData: FileData[] = [];
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            fileData.push({
-              id: doc.id,
-              fileName: data.fileName || 'Unnamed File',
-              downloadURL: data.downloadURL || '',
-              docType: data.docType || 'Unknown',
-              createdAt: data.createdAt?.toDate() || new Date(),
-              fileSize: data.fileSize || '',
-            });
-          });
-          setFiles(fileData);
-          setLoading(false);
-          return;
-        }
-        
-        // If central collection had no documents, try the subcollection approach
-        try {
-          const userFilesRef = collection(db, 'users', userId, 'files');
-          const userFilesQuery = query(userFilesRef, orderBy('createdAt', 'desc'));
-          
-          unsubscribeUser = onSnapshot(userFilesQuery, (filesSnapshot) => {
+        // Set up subscription to central documents
+        unsubscribeCentral = onSnapshot(centralQuery, (snapshot) => {
+          // If we got documents from central collection, use those
+          if (!snapshot.empty) {
+            console.log('Found files in central documents collection:', snapshot.size);
             const fileData: FileData[] = [];
-            filesSnapshot.forEach((doc) => {
+            snapshot.forEach((doc) => {
               const data = doc.data();
               fileData.push({
                 id: doc.id,
@@ -105,26 +85,59 @@ export default function AdminUserFiles({ userId }: { userId: string }) {
             });
             setFiles(fileData);
             setLoading(false);
-          }, (err) => {
-            console.error('Error in user files subscription:', err);
-            setError('Failed to load user files. Please try again later.');
+            return;
+          } else {
+            console.log('No files found in central documents collection, trying user files subcollection');
+          }
+          
+          // If central collection had no documents, try the subcollection approach
+          try {
+            const userFilesRef = collection(db, 'users', userId, 'files');
+            const userFilesQuery = query(userFilesRef, orderBy('createdAt', 'desc'));
+            
+            unsubscribeUser = onSnapshot(userFilesQuery, (filesSnapshot) => {
+              console.log('Files subcollection query result:', filesSnapshot.size, 'files found');
+              const fileData: FileData[] = [];
+              filesSnapshot.forEach((doc) => {
+                const data = doc.data();
+                fileData.push({
+                  id: doc.id,
+                  fileName: data.fileName || 'Unnamed File',
+                  downloadURL: data.downloadURL || '',
+                  docType: data.docType || 'Unknown',
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                  fileSize: data.fileSize || '',
+                });
+              });
+              setFiles(fileData);
+              setLoading(false);
+            }, (err) => {
+              const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+              console.error('Error in user files subscription:', err);
+              setError(`Failed to load user files: ${errorMessage}. This could be a permissions issue.`);
+              setLoading(false);
+            });
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            console.error('Error setting up user files subscription:', err);
+            setError(`Failed to access user files: ${errorMessage}. This could be due to insufficient permissions.`);
             setLoading(false);
-          });
-        } catch (err) {
-          console.error('Error setting up user files subscription:', err);
-          setError('Failed to access user files. Please try again later.');
+          }
+        }, (err) => {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+          console.error('Error in central files subscription:', err);
+          setError(`Failed to load documents: ${errorMessage}. This could be due to insufficient permissions.`);
           setLoading(false);
-        }
-      }, (err) => {
-        console.error('Error in central files subscription:', err);
-        setError('Failed to load documents. Please try again later.');
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('Error setting up central files subscription:', err);
+        setError(`Failed to set up document subscription: ${errorMessage}. Please check your connection and permissions.`);
         setLoading(false);
-      });
-    } catch (err) {
-      console.error('Error setting up central files subscription:', err);
-      setError('Failed to set up document subscription. Please try again later.');
-      setLoading(false);
-    }
+      }
+    };
+
+    fetchFiles();
 
     return () => {
       if (unsubscribeCentral) unsubscribeCentral();
@@ -151,12 +164,31 @@ export default function AdminUserFiles({ userId }: { userId: string }) {
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <FiAlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
         <p className="text-red-700">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-        >
-          Retry
-        </button>
+        
+        <div className="mt-4 text-sm text-red-600">
+          <p>This could be due to permission issues accessing the user&apos;s files.</p>
+          <p>Make sure you have deployed the updated Firestore rules.</p>
+        </div>
+        
+        <div className="mt-4 flex flex-col items-center space-y-2">
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+          >
+            Retry
+          </button>
+          
+          <button
+            onClick={() => {
+              // Run the deploy command instruction in the console
+              console.log("Please run this command to deploy the updated Firestore rules:");
+              console.log("firebase deploy --only firestore:rules");
+            }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+          >
+            Show Deploy Command
+          </button>
+        </div>
       </div>
     );
   }

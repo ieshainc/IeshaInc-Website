@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { db } from '../services/firebase';
-import { useSelector } from 'react-redux';
+import { db, auth } from '../services/firebase';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/index';
+import { clearUser } from '../store/slices/userSlice';
 import {
   doc,
   getDoc,
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth'; 
 import UserProfileFields, {
   ProfileData,
 } from '../components/userProfile/UserProfileFields';
@@ -18,6 +20,7 @@ import RouteGuard from '../components/RouteGuard';
 
 export default function ProfilePage() {
   const userAuth = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch();
   const [profile, setProfile] = useState<ProfileData>({
     firstName: '',
     lastName: '',
@@ -30,6 +33,7 @@ export default function ProfilePage() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch profile data when user is authenticated
   useEffect(() => {
@@ -135,6 +139,47 @@ export default function ProfilePage() {
     }
   };
 
+  // Handle account deletion
+  const handleDeleteUser = async () => {
+    if (!userAuth.uid || !auth.currentUser) {
+      setSaveError('No user is signed in. Please sign in first.');
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "WARNING: This will permanently delete your account. You will need to create a new account to access the system again. Are you sure?"
+    );
+
+    if (confirmDelete) {
+      try {
+        setIsDeleting(true);
+        
+        // Mark user as deleted in Firestore
+        await setDoc(
+          doc(db, 'users', userAuth.uid),
+          {
+            isDeleted: true,
+            deletedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+
+        // Delete auth user
+        await deleteUser(auth.currentUser);
+        
+        // Clear user from Redux store - this will trigger RouteGuard to handle redirection
+        dispatch(clearUser());
+        
+        // No need to manually redirect - RouteGuard will handle this
+        // The above action will trigger the RouteGuard which will redirect to login page
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        setSaveError("Failed to delete account. You may need to re-authenticate first.");
+        setIsDeleting(false);
+      }
+    }
+  };
+
   const ViewOnlyProfile = () => {
     // Check if profile is incomplete
     const isProfileIncomplete = !profile.firstName || !profile.lastName || !profile.phone || !profile.address;
@@ -226,12 +271,21 @@ export default function ProfilePage() {
           </div>
         )}
         
-        <div className="pt-5">
+        <div className="pt-5 flex justify-between">
           <button
             onClick={() => setIsEditing(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Edit Profile
+          </button>
+          
+          {/* Delete Account Button */}
+          <button
+            onClick={handleDeleteUser}
+            disabled={isDeleting}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete Account'}
           </button>
         </div>
       </div>

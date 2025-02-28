@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { FiAlertCircle } from 'react-icons/fi';
 
 interface UserDetails {
   firstName: string;
@@ -11,6 +12,8 @@ interface UserDetails {
   address?: string;
   createdAt?: Date;
   lastLogin?: Date;
+  isDeleted?: boolean;
+  deletedAt?: Date;
 }
 
 export default function AdminUserDetails({ userId }: { userId: string }) {
@@ -24,6 +27,8 @@ export default function AdminUserDetails({ userId }: { userId: string }) {
         
         if (userDoc.exists()) {
           const data = userDoc.data();
+          console.log('User details fetched:', userId, 'isDeleted:', data.isDeleted);
+          
           setUserDetails({
             firstName: data.firstName || '',
             lastName: data.lastName || '',
@@ -32,6 +37,8 @@ export default function AdminUserDetails({ userId }: { userId: string }) {
             address: data.address || '',
             createdAt: data.createdAt?.toDate(),
             lastLogin: data.lastLogin?.toDate(),
+            isDeleted: data.isDeleted === true,
+            deletedAt: data.deletedAt ? data.deletedAt.toDate() : null
           });
         }
         
@@ -59,6 +66,27 @@ export default function AdminUserDetails({ userId }: { userId: string }) {
 
   return (
     <div>
+      {userDetails.isDeleted && (
+        <div className="mb-6 rounded-md bg-red-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <FiAlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Deleted Account</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>This user account has been deleted from authentication but the data is preserved.</p>
+                {userDetails.deletedAt && (
+                  <p className="mt-1">
+                    Deleted on: {userDetails.deletedAt.toLocaleDateString()} at {userDetails.deletedAt.toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="space-y-6">
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
@@ -77,6 +105,19 @@ export default function AdminUserDetails({ userId }: { userId: string }) {
                 <dt className="text-sm font-medium text-gray-500">Email address</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{userDetails.email}</dd>
               </div>
+              {userDetails.isDeleted && (
+                <div className="bg-red-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-red-500">Account status</dt>
+                  <dd className="mt-1 text-sm text-red-700 sm:mt-0 sm:col-span-2">
+                    Deleted
+                    {userDetails.deletedAt && (
+                      <span className="ml-2">
+                        on {userDetails.deletedAt.toLocaleDateString()}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              )}
               {userDetails.phoneNumber && (
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Phone number</dt>
