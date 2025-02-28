@@ -27,14 +27,16 @@ export default function AuthStateListener({ children, isMobile = false }: AuthSt
           uid: user.uid,
           email: user.email || null,
           displayName: user.displayName || null,
-          provider: provider
+          provider: provider,
+          role: null
         }));
       } else {
         dispatch(setUser({
           uid: null,
           email: null,
           displayName: null,
-          provider: null
+          provider: null,
+          role: null
         }));
       }
     });
