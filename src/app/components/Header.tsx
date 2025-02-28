@@ -64,6 +64,15 @@ export default function Header() {
                     Admin Portal
                   </Link>
                 )}
+                {/* Admin Portal Link - only visible to admin users */}
+                {isAdmin && pathname !== '/adminportal' && (
+                  <Link 
+                    href="/adminportal" 
+                    className="text-gray-900 hover:text-gray-600"
+                  >
+                    Admin Portal
+                  </Link>
+                )}
               </>
             )}
             
@@ -124,6 +133,16 @@ export default function Header() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Client Portal
+                    </Link>
+                  )}
+                  {/* Admin Portal Link - only visible to admin users */}
+                  {isAdmin && pathname !== '/adminportal' && (
+                    <Link 
+                      href="/adminportal" 
+                      className="block px-4 py-2 text-gray-900 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Portal
                     </Link>
                   )}
                   {/* Admin Portal Link - only visible to admin users */}
