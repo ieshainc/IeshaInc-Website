@@ -12,9 +12,21 @@ export default function Header() {
   const pathname = usePathname();
   const user = useSelector((state: RootState) => state.user);
   const isAuthenticated = !!user.uid;
-  // Check if user is admin based on role instead of email
+  // Check if user is admin based on role
   const isAdmin = isAuthenticated && user.role === 'admin';
 
+  // Debug log for user role state
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Header component - User auth state:', { 
+        isAuthenticated, 
+        role: user.role, 
+        isAdmin,
+        uid: user.uid
+      });
+    }
+  }, [isAuthenticated, user.role, isAdmin, user.uid]);
+  
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
@@ -53,15 +65,6 @@ export default function Header() {
                     className="text-gray-900 hover:text-gray-600"
                   >
                     Client Portal
-                  </Link>
-                )}
-                {/* Admin Portal Link - only visible to admin users */}
-                {isAdmin && pathname !== '/adminportal' && (
-                  <Link 
-                    href="/adminportal" 
-                    className="text-gray-900 hover:text-gray-600"
-                  >
-                    Admin Portal
                   </Link>
                 )}
                 {/* Admin Portal Link - only visible to admin users */}
@@ -133,16 +136,6 @@ export default function Header() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Client Portal
-                    </Link>
-                  )}
-                  {/* Admin Portal Link - only visible to admin users */}
-                  {isAdmin && pathname !== '/adminportal' && (
-                    <Link 
-                      href="/adminportal" 
-                      className="block px-4 py-2 text-gray-900 hover:bg-gray-100"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin Portal
                     </Link>
                   )}
                   {/* Admin Portal Link - only visible to admin users */}

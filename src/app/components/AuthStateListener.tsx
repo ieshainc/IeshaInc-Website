@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { setUser, clearUser } from '../store/slices/userSlice';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthStateListenerProps {
   children?: React.ReactNode;
@@ -15,21 +15,41 @@ interface AuthStateListenerProps {
 
 export default function AuthStateListener({ children, isMobile = false }: AuthStateListenerProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const user = useAppSelector((state) => state.user);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const provider = user.providerData[0]?.providerId || null;
         
-        dispatch(setUser({
-          uid: user.uid,
-          email: user.email || null,
-          displayName: user.displayName || null,
-          provider: provider,
-          role: null
-        }));
+        try {
+          // Check Firestore for user role immediately
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          const role = userDoc.exists() ? userDoc.data()?.role || null : null;
+          
+          console.log('AuthStateListener - User role from Firestore:', role);
+          
+          // Update Redux state with complete user info including role
+          dispatch(setUser({
+            uid: user.uid,
+            email: user.email || null,
+            displayName: user.displayName || null,
+            provider: provider,
+            role: role
+          }));
+        } catch (error) {
+          console.error('Error fetching user role in AuthStateListener:', error);
+          // Update Redux without role information if there's an error
+          dispatch(setUser({
+            uid: user.uid,
+            email: user.email || null,
+            displayName: user.displayName || null,
+            provider: provider,
+            role: null
+          }));
+        }
       } else {
         dispatch(setUser({
           uid: null,
@@ -46,19 +66,24 @@ export default function AuthStateListener({ children, isMobile = false }: AuthSt
 
   const handleSignOut = async () => {
     try {
+      setIsLoggingOut(true);
       await signOut(auth);
       dispatch(clearUser());
+      setIsLoggingOut(false);
     } catch (error) {
       console.error('Error signing out:', error);
+      setIsLoggingOut(false);
     }
   };
 
   const handleSignIn = () => {
-    router.push('/auth?form=login');
+    // Use window.location instead of router.push for cleaner navigation
+    window.location.href = '/auth?form=login';
   };
 
   const handleCreateAccount = () => {
-    router.push('/auth?form=signup');
+    // Use window.location instead of router.push for cleaner navigation
+    window.location.href = '/auth?form=signup';
   };
 
   // If children are provided, just wrap them (original behavior)
@@ -78,9 +103,10 @@ export default function AuthStateListener({ children, isMobile = false }: AuthSt
         )}
         <button
           onClick={handleSignOut}
-          className={`${isMobile ? "w-full" : ""} px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+          disabled={isLoggingOut}
+          className={`${isMobile ? "w-full" : ""} px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50`}
         >
-          Sign Out
+          {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
         </button>
       </div>
     );
