@@ -8,7 +8,7 @@ import AuthProfileManager from './components/AuthProfileManager';
 
 export const metadata = {
   title: 'Iesha Inc.',
-  description: 'Your business description here',
+  description: 'Innovative Economic Solutions & Honest Accounting Inc.',
 };
 
 export default function RootLayout({

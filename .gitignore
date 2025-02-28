@@ -45,3 +45,7 @@ adminSetup.js
 
 # firebase service account key
 firebase-service-account.json
+
+# firestore rules
+firestore.rules
+

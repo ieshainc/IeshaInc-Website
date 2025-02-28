@@ -21,9 +21,12 @@ service cloud.firestore {
 
     // Users collection rules
     match /users/{userId} {
+      // Allow admin to list all users
+      allow list: if isSignedIn() && isAdmin();
+      
       // Users can read and write their own data
       // Admins can read all user data
-      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow write: if isSignedIn() && isOwner(userId);
       
       // Only admins can modify role field
@@ -32,6 +35,13 @@ service cloud.firestore {
       
       // User documents subcollection - accessible by the user and admins
       match /documents/{docId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+        allow write: if isSignedIn() && isOwner(userId);
+        allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+      }
+      
+      // User files subcollection - with the same permissions as documents
+      match /files/{fileId} {
         allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
         allow write: if isSignedIn() && isOwner(userId);
         allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());

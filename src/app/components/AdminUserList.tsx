@@ -4,7 +4,10 @@ import { db } from '../services/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import AdminUserFiles from './AdminUserFiles';
 import AdminUserDetails from './AdminUserDetails';
-import { FiUser, FiSearch, FiUsers, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiSearch, FiUsers, FiAlertCircle, FiUserX, FiShield } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { checkIsAdmin } from '../utils/adminUtils';
 
 interface UserData {
   id: string;
@@ -14,19 +17,47 @@ interface UserData {
   phoneNumber?: string;
   createdAt?: Date;
   role?: string;
+  isDeleted?: boolean;
+  deletedAt?: Date;
 }
 
 export default function AdminUserList() {
+  const userAuth = useSelector((state: RootState) => state.user);
   const [users, setUsers] = useState<UserData[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'files' | 'details'>('files');
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showDeletedUsers, setShowDeletedUsers] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if the current user is an admin
+  useEffect(() => {
+    const verifyAdminStatus = async () => {
+      if (userAuth?.uid) {
+        const adminStatus = await checkIsAdmin(userAuth.uid);
+        setIsAdmin(adminStatus);
+        
+        // If not admin, set an error message
+        if (!adminStatus) {
+          setError('You do not have permission to access this page. Admin privileges are required.');
+          setLoading(false);
+        }
+      }
+    };
+    
+    verifyAdminStatus();
+  }, [userAuth?.uid]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        // Only proceed if user is admin
+        if (!isAdmin) {
+          return;
+        }
+        
         setError(null);
         const usersRef = collection(db, 'users');
         
@@ -59,9 +90,16 @@ export default function AdminUserList() {
             email: data.email || '',
             phoneNumber: data.phoneNumber || '',
             createdAt: data.createdAt?.toDate?.() || new Date(),
-            role: data.role || ''
+            role: data.role || '',
+            // Make sure we're correctly reading these fields
+            isDeleted: data.isDeleted === true, // Explicitly check for true
+            deletedAt: data.deletedAt ? data.deletedAt.toDate() : null
           });
         });
+        
+        // Debug: Log deleted users information
+        const deletedUsers = userData.filter(user => user.isDeleted);
+        console.log('Deleted users found:', deletedUsers.length, deletedUsers);
         
         // Sort users client-side if there are fields missing
         const sortedUsers = userData.sort((a, b) => {
@@ -74,20 +112,37 @@ export default function AdminUserList() {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching users:', error);
-        setError('Failed to load users. Please try again later.');
+        setError('Failed to load users: ' + (error instanceof Error ? error.message : 'Unknown error') + 
+                '. You may not have sufficient permissions to view this data.');
         setLoading(false);
       }
     };
 
-    fetchUsers();
-  }, []);
+    // Only fetch users if admin status has been verified
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin]);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    (user.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter users based on search term and deleted status
+  const filteredUsers = users.filter(user => {
+    // First check if user matches search criteria
+    const matchesSearch = 
+      (user.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // If showDeletedUsers is false, exclude deleted users
+    // If showDeletedUsers is true, include all users that match search
+    if (!showDeletedUsers && user.isDeleted) {
+      return false; // Don't show deleted users when toggle is off
+    }
+    
+    return matchesSearch; // Only show users that match search criteria
+  });
+
+  // Count deleted users for the toggle button display
+  const deletedUsersCount = users.filter(user => user.isDeleted).length;
 
   if (loading) {
     return (
@@ -102,12 +157,20 @@ export default function AdminUserList() {
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <FiAlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
         <p className="text-red-700">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-        >
-          Retry
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+          >
+            Retry
+          </button>
+        )}
+        {!isAdmin && (
+          <div className="mt-4 flex items-center justify-center">
+            <FiShield className="h-5 w-5 text-red-500 mr-2" />
+            <p className="text-red-700">Admin privileges required</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -141,6 +204,28 @@ export default function AdminUserList() {
           </div>
         </div>
         
+        {/* Show Deleted Users Toggle */}
+        <div className="p-3 border-b border-gray-200 flex justify-between items-center">
+          <div className="flex items-center">
+            <FiUserX className="h-5 w-5 text-gray-400 mr-2" />
+            <span className="text-sm text-gray-600">Show Deleted Accounts</span>
+          </div>
+          <button
+            onClick={() => {
+              console.log('Toggling deleted users display. Current:', showDeletedUsers, 'New:', !showDeletedUsers);
+              console.log('Total deleted users in state:', users.filter(user => user.isDeleted).length);
+              setShowDeletedUsers(!showDeletedUsers);
+            }}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              showDeletedUsers 
+                ? 'bg-red-100 text-red-800' 
+                : 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {showDeletedUsers ? 'Showing' : 'Hidden'} ({deletedUsersCount})
+          </button>
+        </div>
+        
         <div className="max-h-[70vh] overflow-y-auto">
           {filteredUsers.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
@@ -160,20 +245,34 @@ export default function AdminUserList() {
                 >
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <FiUser className="h-6 w-6 text-indigo-600" />
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                        user.isDeleted ? 'bg-red-100' : user.role === 'admin' ? 'bg-green-100' : 'bg-indigo-100'
+                      }`}>
+                        {user.isDeleted 
+                          ? <FiUserX className="h-6 w-6 text-red-600" />
+                          : user.role === 'admin' 
+                            ? <FiShield className="h-6 w-6 text-green-600" /> 
+                            : <FiUser className="h-6 w-6 text-indigo-600" />
+                        }
                       </div>
                     </div>
                     <div className="ml-3 flex-grow">
-                      <div className="font-medium text-gray-900">
+                      <div className={`font-medium ${user.isDeleted ? 'text-gray-500' : 'text-gray-900'}`}>
                         {user.lastName ? `${user.lastName}, ${user.firstName}` : user.firstName || user.email || 'Unknown User'}
                       </div>
                       {user.email && <div className="text-sm text-gray-600">{user.email}</div>}
-                      {user.role && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 mt-1">
-                          {user.role}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user.role && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                            {user.role}
+                          </span>
+                        )}
+                        {user.isDeleted && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            Deleted {user.deletedAt ? new Date(user.deletedAt).toLocaleDateString() : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
