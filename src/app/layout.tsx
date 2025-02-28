@@ -7,7 +7,7 @@ import ClientOnly from './components/ClientOnly';
 import AuthProfileManager from './components/AuthProfileManager';
 
 export const metadata = {
-  title: 'YourSite - Your Business',
+  title: 'Iesha Inc.',
   description: 'Your business description here',
 };
 

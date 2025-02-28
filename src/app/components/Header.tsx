@@ -25,7 +25,7 @@ export default function Header() {
       <div className="container mx-auto px-4">
         {/* Desktop Header */}
         <div className="hidden md:flex items-center justify-between py-4">
-          <div className="text-2xl font-bold text-indigo-600">YourSite</div>
+          <div className="text-2xl font-bold text-indigo-600">Iesha Inc.</div>
           <nav className="flex items-center space-x-6">
             {pathname !== '/' && (
               <Link 
@@ -83,7 +83,7 @@ export default function Header() {
         {/* Mobile Header */}
         <div className="md:hidden">
           <div className="flex items-center justify-between py-4">
-            <div className="text-xl font-bold text-indigo-600">YourSite</div>
+            <div className="text-xl font-bold text-indigo-600">Iesha Inc.</div>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-gray-900 p-2"
