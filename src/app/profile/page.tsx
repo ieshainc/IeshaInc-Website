@@ -31,38 +31,43 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Fetch profile data
+  // Check if user is authenticated
   useEffect(() => {
-    setLoadingProfile(true);
-    
-    const fetchProfile = async () => {
-      try {
-        if (userAuth.uid) {
-          const userDocRef = doc(db, 'users', userAuth.uid);
-          const docSnap = await getDoc(userDocRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data() as Partial<ProfileData>;
-            setProfile(prev => ({
-              ...prev,
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              phone: data.phone || '',
-              address: data.address || '',
-              hasPin: data.hasPin ?? false,
-              onboardingSkipped: data.onboardingSkipped ?? false,
-            }));
+    if (!userAuth.uid) {
+      router.push('/auth?form=login');
+    } else {
+      setLoadingProfile(true);
+      
+      // Fetch profile data
+      const fetchProfile = async () => {
+        try {
+          if (userAuth.uid) {
+            const userDocRef = doc(db, 'users', userAuth.uid);
+            const docSnap = await getDoc(userDocRef);
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data() as Partial<ProfileData>;
+              setProfile(prev => ({
+                ...prev,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                phone: data.phone || '',
+                address: data.address || '',
+                hasPin: data.hasPin ?? false,
+                onboardingSkipped: data.onboardingSkipped ?? false,
+              }));
+            }
           }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+        } finally {
+          setLoadingProfile(false);
         }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    
-    fetchProfile();
-  }, [userAuth.uid]);
+      };
+      
+      fetchProfile();
+    }
+  }, [userAuth.uid, router]);
 
   // Reset status messages when editing state changes
   useEffect(() => {
