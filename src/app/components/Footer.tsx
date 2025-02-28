@@ -16,12 +16,12 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <div className="text-xl font-bold text-indigo-600">YourSite</div>
+            <div className="text-xl font-bold text-indigo-600">Iesha Inc.</div>
             <p className="text-sm text-gray-600 mt-1">Your business slogan here</p>
           </div>
           
           <div className="text-sm text-gray-500">
-            &copy; {currentYear || ''} YourSite. All rights reserved.
+            &copy; {currentYear || ''} Iesha Inc. All rights reserved.
           </div>
         </div>
       </div>
