@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../services/firebase';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { RootState } from '../store/index';
 import {
   doc,
   getDoc,
@@ -31,32 +31,30 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Check if user is authenticated
+  // Fetch profile data when user is authenticated
   useEffect(() => {
-    if (!userAuth.uid) {
-      router.push('/auth?form=login');
-    } else {
+    if (userAuth.uid) {
       setLoadingProfile(true);
       
       // Fetch profile data
       const fetchProfile = async () => {
         try {
-          if (userAuth.uid) {
-            const userDocRef = doc(db, 'users', userAuth.uid);
-            const docSnap = await getDoc(userDocRef);
-            
-            if (docSnap.exists()) {
-              const data = docSnap.data() as Partial<ProfileData>;
-              setProfile(prev => ({
-                ...prev,
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
-                phone: data.phone || '',
-                address: data.address || '',
-                hasPin: data.hasPin ?? false,
-                onboardingSkipped: data.onboardingSkipped ?? false,
-              }));
-            }
+          // Ensure uid is not null before using it
+          const uid = userAuth.uid as string;
+          const userDocRef = doc(db, 'users', uid);
+          const docSnap = await getDoc(userDocRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Partial<ProfileData>;
+            setProfile(prev => ({
+              ...prev,
+              firstName: data.firstName || '',
+              lastName: data.lastName || '',
+              phone: data.phone || '',
+              address: data.address || '',
+              hasPin: data.hasPin ?? false,
+              onboardingSkipped: data.onboardingSkipped ?? false,
+            }));
           }
         } catch (err) {
           console.error('Error fetching profile:', err);
@@ -67,7 +65,7 @@ export default function ProfilePage() {
       
       fetchProfile();
     }
-  }, [userAuth.uid, router]);
+  }, [userAuth.uid]);
 
   // Reset status messages when editing state changes
   useEffect(() => {
@@ -114,8 +112,10 @@ export default function ProfilePage() {
 
     // Save to Firestore
     try {
+      // Ensure uid is not null before using it (already checked above but TypeScript needs help)
+      const uid = userAuth.uid as string;
       await setDoc(
-        doc(db, 'users', userAuth.uid),
+        doc(db, 'users', uid),
         {
           firstName: trimmedFirstName,
           lastName: trimmedLastName,
@@ -163,8 +163,9 @@ export default function ProfilePage() {
                           try {
                             if (userAuth.uid) {
                               // Reset the onboardingSkipped flag
+                              const uid = userAuth.uid as string;
                               await setDoc(
-                                doc(db, 'users', userAuth.uid),
+                                doc(db, 'users', uid),
                                 { onboardingSkipped: false },
                                 { merge: true }
                               );
