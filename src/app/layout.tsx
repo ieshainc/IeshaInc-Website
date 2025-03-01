@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import SessionManager from './components/SessionManager';
 import ClientOnly from './components/ClientOnly';
 import AuthProfileManager from './components/AuthProfileManager';
+import InactivityManager from './components/InactivityManager';
 
 export const metadata = {
   title: 'Iesha Inc.',
@@ -23,9 +24,11 @@ export default function RootLayout({
           <ClientOnly>
             <SessionManager />
             <AuthProfileManager />
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
+            <InactivityManager timeoutMinutes={1} warningMinutes={.5}>
+              <Header />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+            </InactivityManager>
           </ClientOnly>
         </Providers>
       </body>

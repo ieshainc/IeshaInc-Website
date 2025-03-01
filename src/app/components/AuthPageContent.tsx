@@ -15,6 +15,8 @@ export default function AuthPageContent() {
   
   // State to track whether to show signup form (true) or login form (false)
   const [isSignUp, setIsSignUp] = useState(false);
+  // Get the reason parameter from URL
+  const inactivityReason = searchParams.get('reason');
   
   // Check URL parameters when component loads
   useEffect(() => {
@@ -35,6 +37,14 @@ export default function AuthPageContent() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center', paddingBottom: '10px' }}>
+      {/* Display inactivity timeout message if redirected for that reason */}
+      {inactivityReason === 'inactivity' && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-6 rounded" role="alert">
+          <p className="font-bold">Session Expired</p>
+          <p>Your session has expired due to inactivity. Please log in again to continue.</p>
+        </div>
+      )}
+      
       {/* Login or Signup form */}
       {isSignUp ? <SignupForm /> : <LoginForm />}
 

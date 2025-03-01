@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { selectUser } from '../store/slices/userSlice';
 import { auth } from '../services/firebase';
@@ -21,6 +21,8 @@ export default function RouteGuard({
   redirectUnauthenticatedTo = '/auth'
 }: RouteGuardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inactivityReason = searchParams.get('reason');
   const userFromRedux = useAppSelector(selectUser);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isChecking, setIsChecking] = useState(true);
@@ -47,16 +49,28 @@ export default function RouteGuard({
         requireAuth, 
         reduxAuth: !!userFromRedux?.uid,
         firebaseAuth: !!firebaseUser,
-        path: window.location.pathname
+        path: window.location.pathname,
+        inactivityReason
       });
     }
 
     // Handle authentication routing
     const handleRouting = () => {
+      // Check for inactivity redirect for auth pages
+      if (!requireAuth && inactivityReason === 'inactivity') {
+        console.log('RouteGuard - User redirected due to inactivity timeout');
+        // We're already on the auth page, no need to redirect
+        return true;
+      }
+      
       if (requireAuth && !isAuthenticated) {
         // Case 1: Route requires auth but user is not authenticated
-        console.log('RouteGuard - User not authenticated, redirecting to:', redirectUnauthenticatedTo);
-        router.push(redirectUnauthenticatedTo);
+        const redirectUrl = inactivityReason === 'inactivity'
+          ? `${redirectUnauthenticatedTo}?reason=inactivity`
+          : redirectUnauthenticatedTo;
+          
+        console.log('RouteGuard - User not authenticated, redirecting to:', redirectUrl);
+        router.push(redirectUrl);
         return false;
       } 
       
@@ -94,7 +108,8 @@ export default function RouteGuard({
     router, 
     isAuthenticated, 
     redirectAuthenticatedTo, 
-    redirectUnauthenticatedTo
+    redirectUnauthenticatedTo,
+    inactivityReason
   ]);
 
   // Show loading state while checking authentication
