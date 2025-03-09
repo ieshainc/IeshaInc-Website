@@ -9,15 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "-": "^0.0.1",
     "@reduxjs/toolkit": "^2.5.1",
-    "firebase": "^11.3.1",
+    "firebase": "^11.4.0",
     "firebase-admin": "^13.1.0",
+    "g": "^2.0.1",
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "react-redux": "^9.2.0",
-    "readline-sync": "^1.4.10"
+    "readline-sync": "^1.4.10",
+    "tools": "^0.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
